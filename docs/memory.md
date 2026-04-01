@@ -39,9 +39,15 @@ Build **AgentFlow** — a platform for creating, customizing, and deploying AI-p
 - **Issue #9**: `StorageService` for avatar upload/delete, avatar upload section in AgentEditorComponent with preview, validation, remove functionality
 - **Issue #10**: Full `AgentDetailComponent` — agent info header with active toggle, quick links grid, personality with show more/less, model settings, public key with copy/regenerate, embed code snippet with copy, delete confirmation modal, 404 state
 
+### Completed & Pushed (Issues #11-13)
+
+- **Issue #11**: `KnowledgeBaseItem` model, `KnowledgeBaseService` (getItems, getItem, createTextItem, uploadDocument, deleteItem, triggerEmbedding), full KB management UI with list, add text modal, upload document, delete confirmation
+- **Issue #12**: Full embed Edge Function — text extraction, chunking (~500 tokens with ~50 overlap), OpenAI `text-embedding-3-small` batch embeddings, chunk storage in `document_chunks` with re-processing support
+- **Issue #13**: `match_documents` Postgres function already existed (migration #10). Created shared `_shared/retrieval.ts` module with `embedText()`, `retrieveContext()`, and `formatContextForPrompt()` for RAG. Updated chat function placeholder to import retrieval.
+
 ### Not Started
 
-- Issues #11-28 remain open on GitHub
+- Issues #14-28 remain open on GitHub
 
 ## Relevant Files & Directories
 
@@ -63,8 +69,9 @@ Build **AgentFlow** — a platform for creating, customizing, and deploying AI-p
 |------|---------|
 | `supabase/config.toml` | Auth providers (Google, GitHub), storage buckets |
 | `supabase/migrations/` | 10 migration files (20260401000001-10) |
-| `supabase/functions/chat/index.ts` | Placeholder edge function |
-| `supabase/functions/embed/index.ts` | Placeholder edge function |
+| `supabase/functions/chat/index.ts` | Chat edge function (placeholder, imports retrieval) |
+| `supabase/functions/embed/index.ts` | Document embedding pipeline (chunk, embed, store) |
+| `supabase/functions/_shared/retrieval.ts` | RAG retrieval helper (embedText, retrieveContext, formatContextForPrompt) |
 | `supabase/seed.sql` | Seed data |
 
 ### Core (Auth & Services)
@@ -78,7 +85,9 @@ Build **AgentFlow** — a platform for creating, customizing, and deploying AI-p
 | `src/app/core/services/supabase.service.ts` | Supabase client wrapper |
 | `src/app/core/services/agent.service.ts` | Full CRUD for agents |
 | `src/app/core/services/storage.service.ts` | Avatar upload/delete to Supabase Storage |
+| `src/app/core/services/knowledge-base.service.ts` | KB CRUD + document upload + embedding trigger |
 | `src/app/core/models/agent.model.ts` | Agent, AgentType, CreateAgentRequest, UpdateAgentRequest |
+| `src/app/core/models/knowledge-base.model.ts` | KnowledgeBaseItem, KBSourceType, CreateTextItemRequest |
 
 ### App Shell & Routing
 
@@ -96,7 +105,7 @@ Build **AgentFlow** — a platform for creating, customizing, and deploying AI-p
 | `src/app/features/agents/agent-editor/agent-editor.ts` + `agent-editor.html` | Complete — Reactive Forms, create/edit modes, validation, avatar upload |
 | `src/app/features/agents/agent-detail/agent-detail.ts` + `agent-detail.html` | Complete — full detail page, embed code, public key, active toggle, delete |
 | `src/app/features/dashboard/dashboard.ts` | Placeholder |
-| `src/app/features/knowledge-base/knowledge-base.ts` | Placeholder |
+| `src/app/features/knowledge-base/knowledge-base.ts` + `knowledge-base.html` | Complete — KB list, add text modal, upload document, delete |
 | `src/app/features/playground/playground.ts` | Placeholder |
 | `src/app/features/test-links/test-links.ts` | Placeholder |
 | `src/app/features/public-chat/public-chat.ts` | Placeholder |
