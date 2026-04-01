@@ -1,0 +1,99 @@
+<div class="min-h-screen bg-gray-50 flex">
+  <!-- Mobile sidebar backdrop -->
+  @if (sidebarOpen()) {
+    <div
+      class="fixed inset-0 z-30 bg-black/50 md:hidden"
+      (click)="closeSidebar()"
+    ></div>
+  }
+
+  <!-- Sidebar -->
+  <aside
+    class="fixed inset-y-0 left-0 z-40 w-64 bg-white border-r border-gray-200 transform transition-transform duration-200 ease-in-out md:translate-x-0 md:static md:z-auto"
+    [class.-translate-x-full]="!sidebarOpen()"
+    [class.translate-x-0]="sidebarOpen()"
+  >
+    <div class="flex flex-col h-full">
+      <!-- Logo -->
+      <div class="flex items-center h-16 px-6 border-b border-gray-200">
+        <a routerLink="/dashboard" class="text-xl font-bold text-indigo-600" (click)="closeSidebar()">AgentFlow</a>
+      </div>
+
+      <!-- Nav links -->
+      <nav class="flex-1 px-4 py-4 space-y-1">
+        <a
+          routerLink="/dashboard"
+          routerLinkActive="bg-indigo-50 text-indigo-700"
+          [routerLinkActiveOptions]="{ exact: true }"
+          class="flex items-center gap-3 px-3 py-2 text-sm font-medium text-gray-700 rounded-md hover:bg-gray-100 transition-colors"
+          (click)="closeSidebar()"
+        >
+          <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M3 12l2-2m0 0l7-7 7 7M5 10v10a1 1 0 001 1h3m10-11l2 2m-2-2v10a1 1 0 01-1 1h-3m-6 0a1 1 0 001-1v-4a1 1 0 011-1h2a1 1 0 011 1v4a1 1 0 001 1m-6 0h6" />
+          </svg>
+          Dashboard
+        </a>
+
+        <a
+          routerLink="/agents"
+          routerLinkActive="bg-indigo-50 text-indigo-700"
+          class="flex items-center gap-3 px-3 py-2 text-sm font-medium text-gray-700 rounded-md hover:bg-gray-100 transition-colors"
+          (click)="closeSidebar()"
+        >
+          <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9.75 17L9 20l-1 1h8l-1-1-.75-3M3 13h18M5 17h14a2 2 0 002-2V5a2 2 0 00-2-2H5a2 2 0 00-2 2v10a2 2 0 002 2z" />
+          </svg>
+          Agents
+        </a>
+
+        <a
+          routerLink="/conversations"
+          routerLinkActive="bg-indigo-50 text-indigo-700"
+          class="flex items-center gap-3 px-3 py-2 text-sm font-medium text-gray-700 rounded-md hover:bg-gray-100 transition-colors"
+          (click)="closeSidebar()"
+        >
+          <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8 10h.01M12 10h.01M16 10h.01M9 16H5a2 2 0 01-2-2V6a2 2 0 012-2h14a2 2 0 012 2v8a2 2 0 01-2 2h-5l-5 5v-5z" />
+          </svg>
+          Conversations
+        </a>
+      </nav>
+    </div>
+  </aside>
+
+  <!-- Main content -->
+  <div class="flex-1 flex flex-col min-w-0">
+    <!-- Header -->
+    <header class="h-16 bg-white border-b border-gray-200 flex items-center justify-between px-4 md:px-6">
+      <!-- Mobile hamburger -->
+      <button
+        class="md:hidden p-2 text-gray-500 hover:text-gray-700 rounded-md"
+        (click)="toggleSidebar()"
+      >
+        <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+          <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 6h16M4 12h16M4 18h16" />
+        </svg>
+      </button>
+
+      <div class="hidden md:block"></div>
+
+      <!-- User info + sign out -->
+      <div class="flex items-center gap-4">
+        <span class="text-sm text-gray-600 hidden sm:inline">
+          {{ authService.user()?.email }}
+        </span>
+        <button
+          (click)="signOut()"
+          class="text-sm text-gray-500 hover:text-gray-700 px-3 py-1.5 border border-gray-300 rounded-md hover:bg-gray-50 transition-colors"
+        >
+          Sign out
+        </button>
+      </div>
+    </header>
+
+    <!-- Page content -->
+    <main class="flex-1 p-4 md:p-6 overflow-auto">
+      <router-outlet />
+    </main>
+  </div>
+</div>

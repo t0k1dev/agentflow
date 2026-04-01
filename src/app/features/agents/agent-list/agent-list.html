@@ -1,0 +1,155 @@
+<div>
+  <!-- Header -->
+  <div class="flex items-center justify-between mb-6">
+    <div>
+      <h1 class="text-2xl font-bold text-gray-900">Agents</h1>
+      <p class="mt-1 text-sm text-gray-500">Manage your AI-powered agents</p>
+    </div>
+    <a
+      routerLink="/agents/new"
+      class="inline-flex items-center gap-2 px-4 py-2 bg-indigo-600 text-white text-sm font-medium rounded-md hover:bg-indigo-700 focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:ring-offset-2 transition-colors"
+    >
+      <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 4v16m8-8H4" />
+      </svg>
+      Create Agent
+    </a>
+  </div>
+
+  <!-- Error banner -->
+  @if (error()) {
+    <div class="mb-6 p-4 bg-red-50 border border-red-200 text-red-700 rounded-md text-sm flex items-center justify-between">
+      <span>{{ error() }}</span>
+      <button (click)="loadAgents()" class="text-red-700 underline hover:no-underline text-sm font-medium">Retry</button>
+    </div>
+  }
+
+  <!-- Loading skeleton -->
+  @if (loading()) {
+    <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
+      @for (i of [1, 2, 3, 4, 5, 6]; track i) {
+        <div class="bg-white border border-gray-200 rounded-lg p-5 animate-pulse">
+          <div class="flex items-center gap-3 mb-4">
+            <div class="w-10 h-10 bg-gray-200 rounded-full"></div>
+            <div class="flex-1">
+              <div class="h-4 bg-gray-200 rounded w-3/4 mb-2"></div>
+              <div class="h-3 bg-gray-200 rounded w-1/2"></div>
+            </div>
+          </div>
+          <div class="h-3 bg-gray-200 rounded w-full mb-2"></div>
+          <div class="h-3 bg-gray-200 rounded w-2/3"></div>
+        </div>
+      }
+    </div>
+  }
+
+  <!-- Empty state -->
+  @if (!loading() && !error() && agents().length === 0) {
+    <div class="text-center py-16">
+      <svg class="mx-auto w-16 h-16 text-gray-300" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.5" d="M9.75 17L9 20l-1 1h8l-1-1-.75-3M3 13h18M5 17h14a2 2 0 002-2V5a2 2 0 00-2-2H5a2 2 0 00-2 2v10a2 2 0 002 2z" />
+      </svg>
+      <h3 class="mt-4 text-lg font-medium text-gray-900">No agents yet</h3>
+      <p class="mt-2 text-sm text-gray-500">Create your first agent to get started!</p>
+      <a
+        routerLink="/agents/new"
+        class="inline-flex items-center gap-2 mt-6 px-4 py-2 bg-indigo-600 text-white text-sm font-medium rounded-md hover:bg-indigo-700 focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:ring-offset-2 transition-colors"
+      >
+        <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+          <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 4v16m8-8H4" />
+        </svg>
+        Create Agent
+      </a>
+    </div>
+  }
+
+  <!-- Agent cards grid -->
+  @if (!loading() && agents().length > 0) {
+    <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
+      @for (agent of agents(); track agent.id) {
+        <div
+          class="bg-white border border-gray-200 rounded-lg p-5 hover:shadow-md hover:border-gray-300 transition-all cursor-pointer relative group"
+          (click)="navigateToAgent(agent.id)"
+        >
+          <!-- Card header -->
+          <div class="flex items-start gap-3 mb-3">
+            <!-- Avatar -->
+            @if (agent.avatar_url) {
+              <img
+                [src]="agent.avatar_url"
+                [alt]="agent.name"
+                class="w-10 h-10 rounded-full object-cover flex-shrink-0"
+              />
+            } @else {
+              <div class="w-10 h-10 rounded-full bg-indigo-100 flex items-center justify-center flex-shrink-0">
+                <svg class="w-5 h-5 text-indigo-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9.75 17L9 20l-1 1h8l-1-1-.75-3M3 13h18M5 17h14a2 2 0 002-2V5a2 2 0 00-2-2H5a2 2 0 00-2 2v10a2 2 0 002 2z" />
+                </svg>
+              </div>
+            }
+
+            <div class="flex-1 min-w-0">
+              <h3 class="text-sm font-semibold text-gray-900 truncate">{{ agent.name }}</h3>
+              <div class="flex items-center gap-2 mt-1">
+                <span class="inline-flex items-center px-2 py-0.5 rounded text-xs font-medium" [ngClass]="getTypeBadgeClass(agent.type)">
+                  {{ getTypeLabel(agent.type) }}
+                </span>
+                <span
+                  class="inline-flex items-center gap-1 text-xs"
+                  [ngClass]="agent.is_active ? 'text-green-600' : 'text-gray-400'"
+                >
+                  <span class="w-1.5 h-1.5 rounded-full" [ngClass]="agent.is_active ? 'bg-green-500' : 'bg-gray-300'"></span>
+                  {{ agent.is_active ? 'Active' : 'Inactive' }}
+                </span>
+              </div>
+            </div>
+
+            <!-- Delete button -->
+            <button
+              class="opacity-0 group-hover:opacity-100 p-1.5 text-gray-400 hover:text-red-600 rounded-md hover:bg-red-50 transition-all"
+              (click)="showDeleteConfirm(agent.id, $event)"
+              title="Delete agent"
+            >
+              <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16" />
+              </svg>
+            </button>
+          </div>
+
+          <!-- Description -->
+          @if (agent.description) {
+            <p class="text-sm text-gray-500 line-clamp-2 mb-3">{{ agent.description }}</p>
+          }
+
+          <!-- Footer -->
+          <div class="text-xs text-gray-400">
+            Created {{ agent.created_at | date: 'mediumDate' }}
+          </div>
+
+          <!-- Delete confirmation overlay -->
+          @if (confirmDeleteId() === agent.id) {
+            <div class="absolute inset-0 bg-white/95 rounded-lg flex flex-col items-center justify-center p-4" (click)="$event.stopPropagation()">
+              <p class="text-sm font-medium text-gray-900 mb-1">Delete this agent?</p>
+              <p class="text-xs text-gray-500 mb-4">This action cannot be undone.</p>
+              <div class="flex gap-2">
+                <button
+                  (click)="cancelDelete()"
+                  class="px-3 py-1.5 text-sm font-medium text-gray-700 bg-white border border-gray-300 rounded-md hover:bg-gray-50 transition-colors"
+                >
+                  Cancel
+                </button>
+                <button
+                  (click)="confirmDelete(agent.id, $event)"
+                  [disabled]="deletingId() === agent.id"
+                  class="px-3 py-1.5 text-sm font-medium text-white bg-red-600 rounded-md hover:bg-red-700 disabled:opacity-50 transition-colors"
+                >
+                  {{ deletingId() === agent.id ? 'Deleting...' : 'Delete' }}
+                </button>
+              </div>
+            </div>
+          }
+        </div>
+      }
+    </div>
+  }
+</div>

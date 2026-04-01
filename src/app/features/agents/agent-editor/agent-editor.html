@@ -1,0 +1,254 @@
+<div class="max-w-2xl mx-auto">
+  <!-- Header -->
+  <div class="mb-6">
+    <h1 class="text-2xl font-bold text-gray-900">
+      {{ isEditMode() ? 'Edit Agent' : 'Create Agent' }}
+    </h1>
+    <p class="mt-1 text-sm text-gray-500">
+      {{ isEditMode() ? 'Update your agent\'s configuration' : 'Set up a new AI-powered agent' }}
+    </p>
+  </div>
+
+  <!-- Error banner -->
+  @if (error()) {
+    <div class="mb-6 p-4 bg-red-50 border border-red-200 text-red-700 rounded-md text-sm">
+      {{ error() }}
+    </div>
+  }
+
+  <!-- Loading state -->
+  @if (loading()) {
+    <div class="bg-white border border-gray-200 rounded-lg p-6 animate-pulse space-y-6">
+      @for (i of [1, 2, 3, 4, 5]; track i) {
+        <div>
+          <div class="h-4 bg-gray-200 rounded w-1/4 mb-2"></div>
+          <div class="h-10 bg-gray-200 rounded w-full"></div>
+        </div>
+      }
+    </div>
+  }
+
+  <!-- Form -->
+  @if (!loading()) {
+    <form [formGroup]="form" (ngSubmit)="onSubmit()" class="space-y-6">
+
+      <!-- Basic Info Section -->
+      <div class="bg-white border border-gray-200 rounded-lg p-6">
+        <h2 class="text-lg font-semibold text-gray-900 mb-4">Basic Information</h2>
+
+        <!-- Name -->
+        <div class="mb-4">
+          <label for="name" class="block text-sm font-medium text-gray-700 mb-1">
+            Name <span class="text-red-500">*</span>
+          </label>
+          <input
+            id="name"
+            type="text"
+            formControlName="name"
+            class="w-full px-3 py-2 border rounded-md focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:border-transparent transition-colors"
+            [ngClass]="hasError('name') ? 'border-red-300 bg-red-50' : 'border-gray-300'"
+            placeholder="e.g., Customer Support Bot"
+          />
+          @if (hasError('name')) {
+            <p class="mt-1 text-sm text-red-600">{{ getError('name') }}</p>
+          }
+        </div>
+
+        <!-- Description -->
+        <div class="mb-4">
+          <label for="description" class="block text-sm font-medium text-gray-700 mb-1">
+            Description
+          </label>
+          <textarea
+            id="description"
+            formControlName="description"
+            rows="2"
+            class="w-full px-3 py-2 border rounded-md focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:border-transparent transition-colors resize-none"
+            [ngClass]="hasError('description') ? 'border-red-300 bg-red-50' : 'border-gray-300'"
+            placeholder="A brief description of what this agent does"
+          ></textarea>
+          @if (hasError('description')) {
+            <p class="mt-1 text-sm text-red-600">{{ getError('description') }}</p>
+          }
+        </div>
+
+        <!-- Agent Type -->
+        <div>
+          <label for="type" class="block text-sm font-medium text-gray-700 mb-1">
+            Agent Type <span class="text-red-500">*</span>
+          </label>
+          <select
+            id="type"
+            formControlName="type"
+            class="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:border-transparent bg-white transition-colors"
+          >
+            @for (t of agentTypes; track t.value) {
+              <option [value]="t.value">{{ t.label }}</option>
+            }
+          </select>
+        </div>
+      </div>
+
+      <!-- Personality Section -->
+      <div class="bg-white border border-gray-200 rounded-lg p-6">
+        <h2 class="text-lg font-semibold text-gray-900 mb-4">Personality & Behavior</h2>
+
+        <!-- Personality / System Prompt -->
+        <div class="mb-4">
+          <label for="personality" class="block text-sm font-medium text-gray-700 mb-1">
+            Personality (System Prompt) <span class="text-red-500">*</span>
+          </label>
+          <p class="text-xs text-gray-500 mb-2">
+            Describe who the agent is, how it should behave, and what it should or should not do.
+          </p>
+          <textarea
+            id="personality"
+            formControlName="personality"
+            rows="6"
+            class="w-full px-3 py-2 border rounded-md focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:border-transparent transition-colors resize-y"
+            [ngClass]="hasError('personality') ? 'border-red-300 bg-red-50' : 'border-gray-300'"
+            placeholder="You are a helpful customer support agent for Acme Inc. You should be friendly, professional, and knowledgeable about our products..."
+          ></textarea>
+          <div class="flex items-center justify-between mt-1">
+            @if (hasError('personality')) {
+              <p class="text-sm text-red-600">{{ getError('personality') }}</p>
+            } @else {
+              <span></span>
+            }
+            <span class="text-xs text-gray-400">{{ personalityLength }} characters</span>
+          </div>
+        </div>
+
+        <!-- Welcome Message -->
+        <div>
+          <label for="welcome_message" class="block text-sm font-medium text-gray-700 mb-1">
+            Welcome Message
+          </label>
+          <input
+            id="welcome_message"
+            type="text"
+            formControlName="welcome_message"
+            class="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:border-transparent transition-colors"
+            placeholder="Hi! How can I help you today?"
+          />
+          <p class="mt-1 text-xs text-gray-500">The first message displayed when a user opens the chat widget.</p>
+        </div>
+      </div>
+
+      <!-- Model Settings Section -->
+      <div class="bg-white border border-gray-200 rounded-lg p-6">
+        <h2 class="text-lg font-semibold text-gray-900 mb-4">Model Settings</h2>
+
+        <!-- Model -->
+        <div class="mb-4">
+          <label for="model" class="block text-sm font-medium text-gray-700 mb-1">
+            Model
+          </label>
+          <select
+            id="model"
+            formControlName="model"
+            class="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:border-transparent bg-white transition-colors"
+          >
+            @for (m of models; track m.value) {
+              <option [value]="m.value">{{ m.label }}</option>
+            }
+          </select>
+        </div>
+
+        <!-- Temperature -->
+        <div class="mb-4">
+          <label for="temperature" class="block text-sm font-medium text-gray-700 mb-1">
+            Temperature
+            <span class="ml-2 text-sm font-normal text-indigo-600">{{ temperatureValue }}</span>
+          </label>
+          <input
+            id="temperature"
+            type="range"
+            min="0"
+            max="2"
+            step="0.1"
+            [value]="temperatureValue"
+            (input)="onTemperatureInput($event)"
+            class="w-full h-2 bg-gray-200 rounded-lg appearance-none cursor-pointer accent-indigo-600"
+          />
+          <div class="flex justify-between text-xs text-gray-400 mt-1">
+            <span>Precise (0)</span>
+            <span>Creative (2)</span>
+          </div>
+          @if (hasError('temperature')) {
+            <p class="mt-1 text-sm text-red-600">{{ getError('temperature') }}</p>
+          }
+        </div>
+
+        <!-- Max Tokens -->
+        <div>
+          <label for="max_tokens" class="block text-sm font-medium text-gray-700 mb-1">
+            Max Tokens
+          </label>
+          <input
+            id="max_tokens"
+            type="number"
+            formControlName="max_tokens"
+            min="256"
+            max="4096"
+            class="w-full px-3 py-2 border rounded-md focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:border-transparent transition-colors"
+            [ngClass]="hasError('max_tokens') ? 'border-red-300 bg-red-50' : 'border-gray-300'"
+          />
+          <p class="mt-1 text-xs text-gray-500">Between 256 and 4096. Controls the maximum length of the response.</p>
+          @if (hasError('max_tokens')) {
+            <p class="mt-1 text-sm text-red-600">{{ getError('max_tokens') }}</p>
+          }
+        </div>
+      </div>
+
+      <!-- Widget Appearance Section -->
+      <div class="bg-white border border-gray-200 rounded-lg p-6">
+        <h2 class="text-lg font-semibold text-gray-900 mb-4">Widget Appearance</h2>
+
+        <!-- Widget Color -->
+        <div>
+          <label for="widget_color" class="block text-sm font-medium text-gray-700 mb-1">
+            Widget Color
+          </label>
+          <div class="flex items-center gap-3">
+            <input
+              id="widget_color"
+              type="color"
+              formControlName="widget_color"
+              class="w-10 h-10 rounded-md border border-gray-300 cursor-pointer p-0.5"
+            />
+            <input
+              type="text"
+              [value]="form.get('widget_color')?.value"
+              (input)="form.get('widget_color')?.setValue($any($event.target).value)"
+              class="w-28 px-3 py-2 border border-gray-300 rounded-md text-sm font-mono focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:border-transparent"
+              placeholder="#6366f1"
+            />
+            <div
+              class="w-10 h-10 rounded-full shadow-sm border border-gray-200"
+              [style.background-color]="form.get('widget_color')?.value"
+            ></div>
+          </div>
+          <p class="mt-1 text-xs text-gray-500">This color will be used for the chat widget header and buttons.</p>
+        </div>
+      </div>
+
+      <!-- Action buttons -->
+      <div class="flex items-center justify-end gap-3 pb-6">
+        <a
+          [routerLink]="cancelRoute"
+          class="px-4 py-2 text-sm font-medium text-gray-700 bg-white border border-gray-300 rounded-md hover:bg-gray-50 focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:ring-offset-2 transition-colors"
+        >
+          Cancel
+        </a>
+        <button
+          type="submit"
+          [disabled]="saving()"
+          class="px-6 py-2 text-sm font-medium text-white bg-indigo-600 rounded-md hover:bg-indigo-700 focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:ring-offset-2 disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
+        >
+          {{ saving() ? 'Saving...' : (isEditMode() ? 'Save Changes' : 'Create Agent') }}
+        </button>
+      </div>
+    </form>
+  }
+</div>
