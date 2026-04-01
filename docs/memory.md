@@ -34,20 +34,26 @@ Build **AgentFlow** — a platform for creating, customizing, and deploying AI-p
 - **Issue #7**: `AgentListComponent` — responsive card grid with loading skeletons, empty state, delete confirmation overlay, type badges, active/inactive indicators
 - **Issue #8**: `AgentEditorComponent` — full Reactive Forms implementation with create/edit modes, validation, personality character count, temperature slider, color picker, all form sections
 
-### Completed & Pushed (Issues #9-10)
+### Completed & Pushed (Issues #9-10, commit `15bb93c`)
 
 - **Issue #9**: `StorageService` for avatar upload/delete, avatar upload section in AgentEditorComponent with preview, validation, remove functionality
 - **Issue #10**: Full `AgentDetailComponent` — agent info header with active toggle, quick links grid, personality with show more/less, model settings, public key with copy/regenerate, embed code snippet with copy, delete confirmation modal, 404 state
 
-### Completed & Pushed (Issues #11-13)
+### Completed & Pushed (Issues #11-13, commit `e6f2867`)
 
 - **Issue #11**: `KnowledgeBaseItem` model, `KnowledgeBaseService` (getItems, getItem, createTextItem, uploadDocument, deleteItem, triggerEmbedding), full KB management UI with list, add text modal, upload document, delete confirmation
 - **Issue #12**: Full embed Edge Function — text extraction, chunking (~500 tokens with ~50 overlap), OpenAI `text-embedding-3-small` batch embeddings, chunk storage in `document_chunks` with re-processing support
 - **Issue #13**: `match_documents` Postgres function already existed (migration #10). Created shared `_shared/retrieval.ts` module with `embedText()`, `retrieveContext()`, and `formatContextForPrompt()` for RAG. Updated chat function placeholder to import retrieval.
 
+### Completed & Pushed (Issues #14-16)
+
+- **Issue #14**: Full chat Edge Function — validates agent by public_key, creates/reuses conversations by session_id, saves user/assistant messages, RAG retrieval with context injection, OpenAI streaming (SSE), conversation history (last 20 messages), rate limiting (20/min/session), CORS, error handling
+- **Issue #15**: Full Playground UI — agent info panel, live chat with SSE streaming, markdown rendering (marked lib), typing indicator, welcome message, reset conversation, responsive layout, no-personality warning
+- **Issue #16**: Test link model/service/UI — create with optional expiration/max sessions/password (SHA-256 hashed), URL-safe random slug generation, copy-to-clipboard, status badges (active/expired/limit reached/revoked), revoke/delete with confirmation
+
 ### Not Started
 
-- Issues #14-28 remain open on GitHub
+- Issues #17-28 remain open on GitHub
 
 ## Relevant Files & Directories
 
@@ -69,7 +75,7 @@ Build **AgentFlow** — a platform for creating, customizing, and deploying AI-p
 |------|---------|
 | `supabase/config.toml` | Auth providers (Google, GitHub), storage buckets |
 | `supabase/migrations/` | 10 migration files (20260401000001-10) |
-| `supabase/functions/chat/index.ts` | Chat edge function (placeholder, imports retrieval) |
+| `supabase/functions/chat/index.ts` | Chat edge function — full streaming implementation with RAG, conversation logging, rate limiting |
 | `supabase/functions/embed/index.ts` | Document embedding pipeline (chunk, embed, store) |
 | `supabase/functions/_shared/retrieval.ts` | RAG retrieval helper (embedText, retrieveContext, formatContextForPrompt) |
 | `supabase/seed.sql` | Seed data |
@@ -86,8 +92,11 @@ Build **AgentFlow** — a platform for creating, customizing, and deploying AI-p
 | `src/app/core/services/agent.service.ts` | Full CRUD for agents |
 | `src/app/core/services/storage.service.ts` | Avatar upload/delete to Supabase Storage |
 | `src/app/core/services/knowledge-base.service.ts` | KB CRUD + document upload + embedding trigger |
+| `src/app/core/services/chat.service.ts` | SSE streaming client for chat Edge Function |
+| `src/app/core/services/test-link.service.ts` | Test link CRUD, slug generation, password hashing, validation |
 | `src/app/core/models/agent.model.ts` | Agent, AgentType, CreateAgentRequest, UpdateAgentRequest |
 | `src/app/core/models/knowledge-base.model.ts` | KnowledgeBaseItem, KBSourceType, CreateTextItemRequest |
+| `src/app/core/models/test-link.model.ts` | TestLink, TestLinkStatus, status helpers |
 
 ### App Shell & Routing
 
@@ -106,8 +115,8 @@ Build **AgentFlow** — a platform for creating, customizing, and deploying AI-p
 | `src/app/features/agents/agent-detail/agent-detail.ts` + `agent-detail.html` | Complete — full detail page, embed code, public key, active toggle, delete |
 | `src/app/features/dashboard/dashboard.ts` | Placeholder |
 | `src/app/features/knowledge-base/knowledge-base.ts` + `knowledge-base.html` | Complete — KB list, add text modal, upload document, delete |
-| `src/app/features/playground/playground.ts` | Placeholder |
-| `src/app/features/test-links/test-links.ts` | Placeholder |
+| `src/app/features/playground/playground.ts` + `playground.html` | Complete — live chat, SSE streaming, markdown, typing indicator, reset |
+| `src/app/features/test-links/test-links.ts` + `test-links.html` | Complete — create/revoke/delete test links, status badges, copy URL |
 | `src/app/features/public-chat/public-chat.ts` | Placeholder |
 | `src/app/features/conversations/conversation-list/conversation-list.ts` | Placeholder |
 | `src/app/features/conversations/conversation-detail/conversation-detail.ts` | Placeholder |

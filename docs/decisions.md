@@ -324,3 +324,93 @@ This document logs key decisions made during development, the reasoning behind t
 - **Context**: If an agent has no knowledge base or the query doesn't match any chunks, the chat should still work.
 - **Decision**: `retrieveContext()` returns an empty array on RPC errors instead of throwing. `formatContextForPrompt()` returns an empty string when no chunks match. The chat function will work with just the system prompt.
 - **Rationale**: RAG is an enhancement, not a requirement. Agents without knowledge bases should function normally as plain conversational agents.
+
+---
+
+## Issue #14 — Chat Edge Function
+
+### D45: SSE streaming with ReadableStream
+
+- **Context**: The chat function needs to stream tokens in real-time to the client.
+- **Decision**: Use `ReadableStream` to pipe OpenAI's streaming response as Server-Sent Events (SSE). Each event is `data: {"content": "token"}\n\n` format, with `data: [DONE]\n\n` at the end.
+- **Rationale**: SSE is widely supported, works through proxies, and provides a simple protocol for one-directional streaming. The `ReadableStream` constructor allows us to process the OpenAI stream and forward tokens while also capturing the full response for DB storage.
+
+### D46: In-memory rate limiting (20 messages/min/session)
+
+- **Context**: Need to prevent abuse of the chat endpoint.
+- **Decision**: Use an in-memory `Map<sessionId, {count, resetAt}>` with a 60-second sliding window. Max 20 messages per minute per session. Periodic cleanup every 60s to prevent memory leaks.
+- **Rationale**: Simple and effective for single-instance Edge Functions. For production with multiple instances, use Redis or a database-backed rate limiter. The per-session approach is fairer than per-IP (multiple testers behind one IP).
+
+### D47: Service role key for all chat operations
+
+- **Context**: The chat endpoint is used by the widget (unauthenticated) and playground (authenticated).
+- **Decision**: Use the Supabase service role key (bypasses RLS) for all DB operations in the chat function.
+- **Rationale**: The chat endpoint validates access via `agent_public_key` (not user auth). Widget and test link users don't have Supabase auth sessions. The service role key provides consistent behavior across all sources.
+
+### D48: Conversation history limited to last 20 messages
+
+- **Context**: Including full conversation history in the OpenAI prompt can exceed token limits.
+- **Decision**: Fetch the last 20 messages (ordered by `created_at ASC`) for the conversation and include them in the prompt.
+- **Rationale**: 20 messages provides sufficient context for most conversations without risking token overflow. The system prompt + RAG context + 20 messages should stay within model limits for `gpt-4o-mini`.
+
+### D49: Assistant message saved after streaming completes
+
+- **Context**: The full assistant response isn't known until streaming finishes.
+- **Decision**: Accumulate tokens during streaming, then insert the full response into the `messages` table in the `finally` block of the `ReadableStream`.
+- **Rationale**: Ensures the saved message is complete. If streaming fails mid-way, only the partial response (or nothing) is saved, preventing data corruption.
+
+---
+
+## Issue #15 — Playground UI
+
+### D50: `marked` library for markdown rendering
+
+- **Context**: Agent responses may contain markdown (headers, lists, code blocks, links).
+- **Decision**: Install `marked` library and use `DomSanitizer.bypassSecurityTrustHtml()` to render markdown as HTML.
+- **Rationale**: `marked` is lightweight (~40KB), fast, and supports GFM. Using `bypassSecurityTrustHtml` is acceptable here because the content comes from the OpenAI API (trusted source), not arbitrary user input.
+
+### D51: ChatService as SSE stream consumer
+
+- **Context**: The playground needs to consume the chat Edge Function's SSE stream.
+- **Decision**: Create a `ChatService` with `sendMessage()` that takes callback functions (`onToken`, `onDone`, `onError`). Uses `fetch` + `ReadableStream` reader to parse SSE events client-side.
+- **Rationale**: Callback pattern is simpler than RxJS for this use case. The service is reusable by the public chat page (Issue #17) and potentially the widget.
+
+### D52: Session ID per playground session (UUID)
+
+- **Context**: Each playground session needs a unique identifier for conversation grouping.
+- **Decision**: Generate a new UUID via `crypto.randomUUID()` on component init and on "Reset Conversation".
+- **Rationale**: Crypto-random UUIDs are guaranteed unique. Resetting the session creates a new conversation on the server side.
+
+### D53: Streaming content displayed live, then moved to messages array
+
+- **Context**: During streaming, tokens need to show incrementally, then become a permanent message.
+- **Decision**: Use a separate `streamingContent` variable during streaming. When `onDone` fires, push the final content to the `messages[]` array and clear `streamingContent`.
+- **Rationale**: Separating streaming state from the messages array prevents flickering and ensures the final message has complete, properly rendered markdown.
+
+---
+
+## Issue #16 — Shareable Test Links
+
+### D54: SHA-256 password hashing via Web Crypto API
+
+- **Context**: Test links can optionally be password protected. The issue suggests bcrypt but notes "or similar."
+- **Decision**: Use `crypto.subtle.digest('SHA-256', ...)` from the Web Crypto API for password hashing.
+- **Rationale**: Available natively in the browser without additional libraries. For production, consider bcrypt via a server-side function for stronger protection (SHA-256 is fast and susceptible to brute force). Acceptable for test link passwords which are low-security.
+
+### D55: URL-safe random slug generation (8-12 chars)
+
+- **Context**: Test links need short, unique, URL-safe slugs.
+- **Decision**: Generate slugs using `crypto.getRandomValues()` with alphanumeric characters, random length between 8-12.
+- **Rationale**: Crypto-random values prevent guessability. 8-12 alphanumeric chars provide ~47-71 bits of entropy — sufficient for URL slugs. Uniqueness is enforced by the database `UNIQUE` constraint on the `slug` column.
+
+### D56: Status derivation from link properties (not stored)
+
+- **Context**: A test link can be Active, Expired, Limit Reached, or Revoked.
+- **Decision**: Derive status dynamically from `is_active`, `expires_at`, `sessions_used`, and `max_sessions` properties using pure functions (`getTestLinkStatus()`), rather than storing a status column.
+- **Rationale**: Avoids data inconsistency. Expiration is time-dependent and would require scheduled jobs to update a stored status. Deriving it at render time is always accurate.
+
+### D57: Base URL hardcoded to `https://app.agentflow.dev/chat`
+
+- **Context**: The shareable URL needs a full domain.
+- **Decision**: Hardcode `https://app.agentflow.dev/chat/{slug}` as the base URL for test links.
+- **Rationale**: Provides a production-ready URL format. In development, users can manually adjust. Could be made configurable via environment variables in a future iteration.

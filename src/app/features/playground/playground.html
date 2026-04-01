@@ -1,0 +1,205 @@
+<div class="h-full flex flex-col lg:flex-row gap-6 p-6 overflow-hidden">
+  <!-- Agent Info Panel (left / top on mobile) -->
+  <div class="lg:w-80 shrink-0">
+    <div class="bg-white rounded-xl shadow-sm border border-gray-200 p-6">
+      @if (loading) {
+        <div class="animate-pulse space-y-4">
+          <div class="w-16 h-16 bg-gray-200 rounded-full"></div>
+          <div class="h-5 bg-gray-200 rounded w-3/4"></div>
+          <div class="h-4 bg-gray-200 rounded w-full"></div>
+          <div class="h-4 bg-gray-200 rounded w-1/2"></div>
+        </div>
+      } @else if (agent) {
+        <div class="flex items-center gap-4 mb-4">
+          @if (agent.avatar_url) {
+            <img
+              [src]="agent.avatar_url"
+              [alt]="agent.name"
+              class="w-14 h-14 rounded-full object-cover border-2 border-gray-100"
+            />
+          } @else {
+            <div
+              class="w-14 h-14 rounded-full flex items-center justify-center text-white font-bold text-lg"
+              [style.background-color]="agent.widget_color"
+            >
+              {{ agent.name.charAt(0).toUpperCase() }}
+            </div>
+          }
+          <div>
+            <h2 class="text-lg font-semibold text-gray-900">{{ agent.name }}</h2>
+            <span
+              class="inline-flex items-center px-2 py-0.5 rounded-full text-xs font-medium"
+              [class]="agent.is_active
+                ? 'bg-green-100 text-green-700'
+                : 'bg-red-100 text-red-700'"
+            >
+              {{ agent.is_active ? 'Active' : 'Inactive' }}
+            </span>
+          </div>
+        </div>
+
+        @if (!agent.personality) {
+          <div class="bg-amber-50 border border-amber-200 rounded-lg p-3 mb-4">
+            <div class="flex gap-2">
+              <svg class="w-5 h-5 text-amber-500 shrink-0 mt-0.5" fill="currentColor" viewBox="0 0 20 20">
+                <path fill-rule="evenodd" d="M8.485 2.495c.673-1.167 2.357-1.167 3.03 0l6.28 10.875c.673 1.167-.17 2.625-1.516 2.625H3.72c-1.347 0-2.189-1.458-1.515-2.625L8.485 2.495zM10 6a.75.75 0 01.75.75v3.5a.75.75 0 01-1.5 0v-3.5A.75.75 0 0110 6zm0 9a1 1 0 100-2 1 1 0 000 2z" clip-rule="evenodd"/>
+              </svg>
+              <div>
+                <p class="text-sm font-medium text-amber-800">No personality configured</p>
+                <p class="text-xs text-amber-600 mt-0.5">
+                  <a [routerLink]="['/agents', agent.id, 'edit']" class="underline hover:text-amber-800">Edit the agent</a>
+                  to add a personality.
+                </p>
+              </div>
+            </div>
+          </div>
+        } @else {
+          <div class="mb-4">
+            <h3 class="text-xs font-semibold text-gray-500 uppercase tracking-wider mb-1">Personality</h3>
+            <p class="text-sm text-gray-700 line-clamp-4">{{ agent.personality }}</p>
+          </div>
+        }
+
+        <div class="space-y-2 text-sm">
+          <div class="flex justify-between">
+            <span class="text-gray-500">Model</span>
+            <span class="font-medium text-gray-900">{{ agent.model }}</span>
+          </div>
+          <div class="flex justify-between">
+            <span class="text-gray-500">Temperature</span>
+            <span class="font-medium text-gray-900">{{ agent.temperature }}</span>
+          </div>
+          <div class="flex justify-between">
+            <span class="text-gray-500">Max Tokens</span>
+            <span class="font-medium text-gray-900">{{ agent.max_tokens }}</span>
+          </div>
+        </div>
+
+        <div class="mt-4 pt-4 border-t border-gray-100">
+          <button
+            (click)="resetConversation()"
+            class="w-full px-4 py-2 text-sm font-medium text-gray-700 bg-gray-100 rounded-lg hover:bg-gray-200 transition-colors"
+          >
+            Reset Conversation
+          </button>
+        </div>
+      }
+    </div>
+  </div>
+
+  <!-- Chat Interface (right / bottom on mobile) -->
+  <div class="flex-1 flex flex-col bg-white rounded-xl shadow-sm border border-gray-200 overflow-hidden min-h-0">
+    <!-- Chat Header -->
+    <div class="px-6 py-3 border-b border-gray-200 bg-gray-50 shrink-0">
+      <h1 class="text-lg font-semibold text-gray-900">Playground</h1>
+      <p class="text-xs text-gray-500">Test your agent in a live chat interface</p>
+    </div>
+
+    <!-- Messages Area -->
+    <div #messagesContainer class="flex-1 overflow-y-auto p-6 space-y-4 min-h-0">
+      @for (msg of messages; track $index) {
+        <div
+          class="flex gap-3"
+          [class]="msg.role === 'user' ? 'justify-end' : 'justify-start'"
+        >
+          @if (msg.role === 'assistant') {
+            <!-- Agent avatar -->
+            @if (agent?.avatar_url) {
+              <img
+                [src]="agent!.avatar_url!"
+                [alt]="agent!.name"
+                class="w-8 h-8 rounded-full object-cover shrink-0 mt-1"
+              />
+            } @else {
+              <div
+                class="w-8 h-8 rounded-full flex items-center justify-center text-white font-bold text-xs shrink-0 mt-1"
+                [style.background-color]="agent?.widget_color || '#6366f1'"
+              >
+                {{ agent?.name?.charAt(0)?.toUpperCase() || 'A' }}
+              </div>
+            }
+          }
+
+          <div
+            class="max-w-[75%] rounded-2xl px-4 py-3 text-sm"
+            [class]="msg.role === 'user'
+              ? 'bg-indigo-600 text-white rounded-br-md'
+              : 'bg-gray-100 text-gray-900 rounded-bl-md'"
+          >
+            @if (msg.role === 'assistant') {
+              <div class="prose prose-sm max-w-none" [innerHTML]="msg.renderedContent"></div>
+            } @else {
+              <p class="whitespace-pre-wrap">{{ msg.content }}</p>
+            }
+          </div>
+        </div>
+      }
+
+      <!-- Typing indicator -->
+      @if (isStreaming) {
+        <div class="flex gap-3 justify-start">
+          @if (agent?.avatar_url) {
+            <img
+              [src]="agent!.avatar_url!"
+              [alt]="agent!.name"
+              class="w-8 h-8 rounded-full object-cover shrink-0 mt-1"
+            />
+          } @else {
+            <div
+              class="w-8 h-8 rounded-full flex items-center justify-center text-white font-bold text-xs shrink-0 mt-1"
+              [style.background-color]="agent?.widget_color || '#6366f1'"
+            >
+              {{ agent?.name?.charAt(0)?.toUpperCase() || 'A' }}
+            </div>
+          }
+          @if (!streamingContent) {
+            <div class="bg-gray-100 rounded-2xl rounded-bl-md px-4 py-3">
+              <div class="flex gap-1">
+                <div class="w-2 h-2 rounded-full bg-gray-400 animate-bounce" style="animation-delay: 0ms"></div>
+                <div class="w-2 h-2 rounded-full bg-gray-400 animate-bounce" style="animation-delay: 150ms"></div>
+                <div class="w-2 h-2 rounded-full bg-gray-400 animate-bounce" style="animation-delay: 300ms"></div>
+              </div>
+            </div>
+          } @else {
+            <div class="max-w-[75%] bg-gray-100 text-gray-900 rounded-2xl rounded-bl-md px-4 py-3 text-sm">
+              <div class="prose prose-sm max-w-none" [innerHTML]="streamingRendered"></div>
+            </div>
+          }
+        </div>
+      }
+
+      <!-- Error message -->
+      @if (errorMessage) {
+        <div class="flex justify-center">
+          <div class="bg-red-50 border border-red-200 rounded-lg px-4 py-2 text-sm text-red-700">
+            {{ errorMessage }}
+          </div>
+        </div>
+      }
+    </div>
+
+    <!-- Input Area -->
+    <div class="px-6 py-4 border-t border-gray-200 bg-white shrink-0">
+      <div class="flex gap-3 items-end">
+        <textarea
+          #messageInput
+          [(ngModel)]="inputMessage"
+          (keydown)="onKeyDown($event)"
+          placeholder="Type a message..."
+          rows="1"
+          class="flex-1 resize-none rounded-xl border border-gray-300 px-4 py-2.5 text-sm focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:border-transparent max-h-32 overflow-y-auto"
+          [disabled]="!agent || loading"
+        ></textarea>
+        <button
+          (click)="sendMessage()"
+          [disabled]="!inputMessage.trim() || isStreaming || !agent || loading"
+          class="shrink-0 w-10 h-10 rounded-xl bg-indigo-600 text-white flex items-center justify-center hover:bg-indigo-700 transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
+        >
+          <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 19V5m0 0l-7 7m7-7l7 7" transform="rotate(45 12 12)"/>
+          </svg>
+        </button>
+      </div>
+    </div>
+  </div>
+</div>
