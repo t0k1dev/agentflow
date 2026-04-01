@@ -26,7 +26,7 @@ Build **AgentFlow** — a platform for creating, customizing, and deploying AI-p
 - **Issue #2**: Supabase CLI init, Google/GitHub OAuth in config, storage buckets (avatars/documents), Edge Function placeholders, `SupabaseService`
 - **Issue #3**: 10 SQL migrations — pgvector, 7 tables, HNSW index, RLS policies, `updated_at` triggers, `match_documents` function
 
-### Implemented, NOT yet committed (Issues #4-8)
+### Completed & Pushed (Issues #4-8, commit `cae1753`)
 
 - **Issue #4**: `AuthService` (signUp, signIn, signInWithOAuth, signOut, getSession, user signal), `authGuard`, `LoginComponent`, `RegisterComponent`
 - **Issue #5**: `ShellComponent` (sidebar + header + router-outlet), all routes configured with lazy loading, placeholder components for all pages, mobile-responsive sidebar with hamburger
