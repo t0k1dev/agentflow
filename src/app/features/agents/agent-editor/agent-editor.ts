@@ -8,6 +8,8 @@ import {
 } from '@angular/forms';
 import { ActivatedRoute, Router, RouterLink } from '@angular/router';
 import { AgentService } from '../../../core/services/agent.service';
+import { StorageService } from '../../../core/services/storage.service';
+import { AuthService } from '../../../core/auth/auth.service';
 import {
   Agent,
   AgentType,
@@ -28,6 +30,14 @@ export class AgentEditorComponent implements OnInit {
   saving = signal(false);
   error = signal<string | null>(null);
 
+  // Avatar state
+  currentAvatarUrl = signal<string | null>(null);
+  avatarPreview = signal<string | null>(null);
+  avatarFile = signal<File | null>(null);
+  avatarUploading = signal(false);
+  avatarError = signal<string | null>(null);
+  avatarRemoved = signal(false);
+
   agentTypes: { value: AgentType; label: string }[] = [
     { value: 'personal', label: 'Personal Assistant' },
     { value: 'customer_service', label: 'Customer Service' },
@@ -43,7 +53,9 @@ export class AgentEditorComponent implements OnInit {
     private fb: FormBuilder,
     private route: ActivatedRoute,
     private router: Router,
-    private agentService: AgentService
+    private agentService: AgentService,
+    private storageService: StorageService,
+    private authService: AuthService
   ) {}
 
   ngOnInit(): void {
@@ -67,8 +79,14 @@ export class AgentEditorComponent implements OnInit {
       personality: ['', [Validators.required]],
       welcome_message: [''],
       model: ['gpt-4o' as AgentModel, [Validators.required]],
-      temperature: [0.7, [Validators.required, Validators.min(0), Validators.max(2)]],
-      max_tokens: [1024, [Validators.required, Validators.min(256), Validators.max(4096)]],
+      temperature: [
+        0.7,
+        [Validators.required, Validators.min(0), Validators.max(2)],
+      ],
+      max_tokens: [
+        1024,
+        [Validators.required, Validators.min(256), Validators.max(4096)],
+      ],
       widget_color: ['#6366f1'],
     });
   }
@@ -79,6 +97,7 @@ export class AgentEditorComponent implements OnInit {
 
     try {
       const agent = await this.agentService.getAgent(id);
+      this.currentAvatarUrl.set(agent.avatar_url);
       this.form.patchValue({
         name: agent.name,
         description: agent.description || '',
@@ -110,6 +129,50 @@ export class AgentEditorComponent implements OnInit {
     this.form.get('temperature')?.setValue(parseFloat(input.value));
   }
 
+  // --- Avatar methods ---
+
+  onAvatarFileSelected(event: Event): void {
+    const input = event.target as HTMLInputElement;
+    const file = input.files?.[0];
+    if (!file) return;
+
+    // Validate
+    const validationError = this.storageService.validateFile(file);
+    if (validationError) {
+      this.avatarError.set(validationError);
+      input.value = '';
+      return;
+    }
+
+    this.avatarError.set(null);
+    this.avatarFile.set(file);
+    this.avatarRemoved.set(false);
+
+    // Generate preview
+    const reader = new FileReader();
+    reader.onload = () => {
+      this.avatarPreview.set(reader.result as string);
+    };
+    reader.readAsDataURL(file);
+  }
+
+  removeAvatar(): void {
+    this.avatarFile.set(null);
+    this.avatarPreview.set(null);
+    this.avatarError.set(null);
+    if (this.currentAvatarUrl()) {
+      this.avatarRemoved.set(true);
+    }
+  }
+
+  get displayAvatarUrl(): string | null {
+    if (this.avatarPreview()) return this.avatarPreview();
+    if (this.avatarRemoved()) return null;
+    return this.currentAvatarUrl();
+  }
+
+  // --- Form submission ---
+
   async onSubmit(): Promise<void> {
     if (this.form.invalid) {
       this.form.markAllAsTouched();
@@ -122,7 +185,12 @@ export class AgentEditorComponent implements OnInit {
     const formValue = this.form.value;
 
     try {
+      let avatarUrl: string | null | undefined = undefined;
+
       if (this.isEditMode() && this.agentId()) {
+        // Handle avatar changes in edit mode
+        avatarUrl = await this.handleAvatarUpload(this.agentId()!);
+
         await this.agentService.updateAgent(this.agentId()!, {
           name: formValue.name,
           description: formValue.description || null,
@@ -133,9 +201,11 @@ export class AgentEditorComponent implements OnInit {
           temperature: formValue.temperature,
           max_tokens: formValue.max_tokens,
           widget_color: formValue.widget_color,
+          ...(avatarUrl !== undefined ? { avatar_url: avatarUrl } : {}),
         });
         this.router.navigate(['/agents', this.agentId()]);
       } else {
+        // Create agent first, then upload avatar
         const agent = await this.agentService.createAgent({
           name: formValue.name,
           description: formValue.description || undefined,
@@ -147,6 +217,21 @@ export class AgentEditorComponent implements OnInit {
           welcome_message: formValue.welcome_message || undefined,
           widget_color: formValue.widget_color,
         });
+
+        // Upload avatar if one was selected
+        if (this.avatarFile()) {
+          try {
+            avatarUrl = await this.handleAvatarUpload(agent.id);
+            if (avatarUrl) {
+              await this.agentService.updateAgent(agent.id, {
+                avatar_url: avatarUrl,
+              });
+            }
+          } catch {
+            // Avatar upload failed but agent was created — navigate anyway
+          }
+        }
+
         this.router.navigate(['/agents', agent.id]);
       }
     } catch (err: any) {
@@ -154,6 +239,42 @@ export class AgentEditorComponent implements OnInit {
     } finally {
       this.saving.set(false);
     }
+  }
+
+  private async handleAvatarUpload(
+    agentId: string
+  ): Promise<string | null | undefined> {
+    const userId = this.authService.user()?.id;
+    if (!userId) return undefined;
+
+    // If avatar was removed
+    if (this.avatarRemoved() && !this.avatarFile()) {
+      if (this.currentAvatarUrl()) {
+        try {
+          await this.storageService.removeAvatar(this.currentAvatarUrl()!);
+        } catch {
+          // Ignore removal errors
+        }
+      }
+      return null;
+    }
+
+    // If a new file was selected
+    if (this.avatarFile()) {
+      this.avatarUploading.set(true);
+      try {
+        const result = await this.storageService.uploadAvatar(
+          userId,
+          agentId,
+          this.avatarFile()!
+        );
+        return result.publicUrl;
+      } finally {
+        this.avatarUploading.set(false);
+      }
+    }
+
+    return undefined; // No change
   }
 
   get cancelRoute(): string {

@@ -34,9 +34,14 @@ Build **AgentFlow** — a platform for creating, customizing, and deploying AI-p
 - **Issue #7**: `AgentListComponent` — responsive card grid with loading skeletons, empty state, delete confirmation overlay, type badges, active/inactive indicators
 - **Issue #8**: `AgentEditorComponent` — full Reactive Forms implementation with create/edit modes, validation, personality character count, temperature slider, color picker, all form sections
 
+### Completed & Pushed (Issues #9-10)
+
+- **Issue #9**: `StorageService` for avatar upload/delete, avatar upload section in AgentEditorComponent with preview, validation, remove functionality
+- **Issue #10**: Full `AgentDetailComponent` — agent info header with active toggle, quick links grid, personality with show more/less, model settings, public key with copy/regenerate, embed code snippet with copy, delete confirmation modal, 404 state
+
 ### Not Started
 
-- Issues #9-28 remain open on GitHub
+- Issues #11-28 remain open on GitHub
 
 ## Relevant Files & Directories
 
@@ -72,6 +77,7 @@ Build **AgentFlow** — a platform for creating, customizing, and deploying AI-p
 | `src/app/core/auth/register/register.ts` + `register.html` | Register page |
 | `src/app/core/services/supabase.service.ts` | Supabase client wrapper |
 | `src/app/core/services/agent.service.ts` | Full CRUD for agents |
+| `src/app/core/services/storage.service.ts` | Avatar upload/delete to Supabase Storage |
 | `src/app/core/models/agent.model.ts` | Agent, AgentType, CreateAgentRequest, UpdateAgentRequest |
 
 ### App Shell & Routing
@@ -87,8 +93,8 @@ Build **AgentFlow** — a platform for creating, customizing, and deploying AI-p
 | File | Status |
 |------|--------|
 | `src/app/features/agents/agent-list/agent-list.ts` + `agent-list.html` | Complete — card grid, skeletons, empty state, delete |
-| `src/app/features/agents/agent-editor/agent-editor.ts` + `agent-editor.html` | Complete — Reactive Forms, create/edit modes, validation |
-| `src/app/features/agents/agent-detail/agent-detail.ts` | Basic placeholder |
+| `src/app/features/agents/agent-editor/agent-editor.ts` + `agent-editor.html` | Complete — Reactive Forms, create/edit modes, validation, avatar upload |
+| `src/app/features/agents/agent-detail/agent-detail.ts` + `agent-detail.html` | Complete — full detail page, embed code, public key, active toggle, delete |
 | `src/app/features/dashboard/dashboard.ts` | Placeholder |
 | `src/app/features/knowledge-base/knowledge-base.ts` | Placeholder |
 | `src/app/features/playground/playground.ts` | Placeholder |

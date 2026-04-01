@@ -184,3 +184,65 @@ This document logs key decisions made during development, the reasoning behind t
 - **Context**: The same component serves both `/agents/new` (create) and `/agents/:id/edit` (edit).
 - **Decision**: Check `ActivatedRoute.snapshot.paramMap.get('id')` in `ngOnInit`. If an ID exists, switch to edit mode and load the agent with `patchValue`. If not, stay in create mode with defaults.
 - **Rationale**: Single component for both modes reduces duplication. Route-based mode detection is standard Angular pattern.
+
+---
+
+## Issue #9 — Avatar Upload
+
+### D25: Separate `StorageService` for file operations
+
+- **Context**: Avatar upload needs file validation, Supabase Storage interaction, and URL extraction.
+- **Decision**: Create a dedicated `StorageService` (`src/app/core/services/storage.service.ts`) rather than adding methods to `SupabaseService`.
+- **Rationale**: Keeps `SupabaseService` as a thin client wrapper. Storage logic (validation, path construction, cleanup) is domain-specific and warrants its own service. Can be extended for document uploads later (knowledge base).
+
+### D26: Client-side file validation before upload
+
+- **Context**: Need to enforce 2MB limit and image-only types.
+- **Decision**: Validate file type and size on the client before calling Supabase Storage. Show error immediately without network request.
+- **Rationale**: Better UX — instant feedback. Reduces unnecessary API calls. Server-side bucket policies provide the second layer of defense.
+
+### D27: Avatar upload deferred to form save (not immediate)
+
+- **Context**: Should avatar upload happen when the user selects a file or when they save the form?
+- **Decision**: Show a local preview via `FileReader.readAsDataURL()` immediately, but defer the actual upload to Supabase Storage until the user clicks Save.
+- **Rationale**: Avoids orphaned uploads if the user cancels. For new agents, the agent ID doesn't exist yet until `createAgent` completes, so upload must happen after creation anyway.
+
+### D28: Clean up old avatars before uploading new ones
+
+- **Context**: When a user changes their avatar, the old file remains in storage.
+- **Decision**: `StorageService.uploadAvatar()` lists and removes all existing files in `{userId}/{agentId}/` before uploading the new one.
+- **Rationale**: Prevents storage bloat from orphaned files. Each agent should only have one avatar at a time.
+
+---
+
+## Issue #10 — Agent Detail Page
+
+### D29: Personality truncation at 200 characters with toggle
+
+- **Context**: System prompts can be very long. Displaying the full text by default clutters the detail page.
+- **Decision**: Show first 200 characters with a "Show more" / "Show less" toggle button.
+- **Rationale**: Keeps the page scannable while still allowing full text inspection when needed.
+
+### D30: Embed code uses Supabase Functions URL pattern
+
+- **Context**: The widget script URL needs to point to the deployed widget JS.
+- **Decision**: Construct the embed code URL from `environment.supabaseUrl` by replacing `.supabase.co` with `.functions.supabase.co/widget/agentflow-widget.js`. Include `data-agent-key`, `data-color`, and optionally `data-welcome` attributes.
+- **Rationale**: Follows Supabase Edge Functions URL convention. The widget itself will be built and deployed as a separate static asset in a later issue.
+
+### D31: Copy-to-clipboard via `navigator.clipboard` API
+
+- **Context**: Need copy buttons for public key and embed code snippet.
+- **Decision**: Use `navigator.clipboard.writeText()` with a temporary "Copied" state (2-second timeout) for visual feedback.
+- **Rationale**: Modern API, supported in all target browsers. No third-party clipboard library needed.
+
+### D32: Delete confirmation as a modal overlay (not inline)
+
+- **Context**: Agent deletion is destructive and irreversible.
+- **Decision**: Show a centered modal with backdrop (`fixed inset-0 z-50 bg-black/50`) explaining the consequences, with Cancel and Delete buttons.
+- **Rationale**: Modal is more prominent than an inline confirmation (used for lighter actions like card delete in the list). The gravity of deleting an agent with all its conversations/documents warrants a modal.
+
+### D33: Active/inactive toggle as a clickable badge (not a switch)
+
+- **Context**: Need a way to activate/deactivate an agent from the detail page.
+- **Decision**: The status indicator next to the agent name is clickable. Clicking it calls `updateAgent({ is_active: !current })` and updates the display.
+- **Rationale**: Inline toggle is faster than navigating to edit mode. The animated ping effect on the active dot provides clear visual differentiation.

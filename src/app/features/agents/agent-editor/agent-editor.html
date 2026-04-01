@@ -89,6 +89,81 @@
         </div>
       </div>
 
+      <!-- Avatar Section -->
+      <div class="bg-white border border-gray-200 rounded-lg p-6">
+        <h2 class="text-lg font-semibold text-gray-900 mb-4">Avatar</h2>
+
+        <div class="flex items-start gap-6">
+          <!-- Avatar preview -->
+          <div class="flex-shrink-0">
+            @if (displayAvatarUrl) {
+              <img
+                [src]="displayAvatarUrl"
+                alt="Agent avatar"
+                class="w-20 h-20 rounded-full object-cover border-2 border-gray-200"
+              />
+            } @else {
+              <div class="w-20 h-20 rounded-full bg-indigo-100 flex items-center justify-center border-2 border-gray-200">
+                <svg class="w-10 h-10 text-indigo-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.5" d="M9.75 17L9 20l-1 1h8l-1-1-.75-3M3 13h18M5 17h14a2 2 0 002-2V5a2 2 0 00-2-2H5a2 2 0 00-2 2v10a2 2 0 002 2z" />
+                </svg>
+              </div>
+            }
+          </div>
+
+          <!-- Upload controls -->
+          <div class="flex-1">
+            <div class="flex items-center gap-3">
+              <label
+                class="inline-flex items-center gap-2 px-3 py-1.5 text-sm font-medium text-gray-700 bg-white border border-gray-300 rounded-md hover:bg-gray-50 cursor-pointer transition-colors"
+              >
+                <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 16l4.586-4.586a2 2 0 012.828 0L16 16m-2-2l1.586-1.586a2 2 0 012.828 0L20 14m-6-6h.01M6 20h12a2 2 0 002-2V6a2 2 0 00-2-2H6a2 2 0 00-2 2v12a2 2 0 002 2z" />
+                </svg>
+                {{ avatarFile() ? 'Change Image' : 'Upload Image' }}
+                <input
+                  type="file"
+                  accept=".png,.jpg,.jpeg,.webp"
+                  class="hidden"
+                  (change)="onAvatarFileSelected($event)"
+                />
+              </label>
+
+              @if (displayAvatarUrl) {
+                <button
+                  type="button"
+                  (click)="removeAvatar()"
+                  class="inline-flex items-center gap-1 px-3 py-1.5 text-sm font-medium text-red-600 bg-white border border-red-200 rounded-md hover:bg-red-50 transition-colors"
+                >
+                  <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16" />
+                  </svg>
+                  Remove
+                </button>
+              }
+
+              @if (avatarUploading()) {
+                <span class="text-sm text-gray-500">Uploading...</span>
+              }
+            </div>
+
+            <p class="mt-2 text-xs text-gray-500">PNG, JPG, JPEG, or WEBP. Max 2MB.</p>
+
+            @if (avatarError()) {
+              <p class="mt-2 text-sm text-red-600">{{ avatarError() }}</p>
+            }
+
+            @if (avatarFile() && !avatarError()) {
+              <p class="mt-2 text-xs text-green-600">New image selected. It will be uploaded when you save.</p>
+            }
+
+            @if (avatarRemoved() && !avatarFile()) {
+              <p class="mt-2 text-xs text-amber-600">Avatar will be removed when you save.</p>
+            }
+          </div>
+        </div>
+      </div>
+
       <!-- Personality Section -->
       <div class="bg-white border border-gray-200 rounded-lg p-6">
         <h2 class="text-lg font-semibold text-gray-900 mb-4">Personality & Behavior</h2>
